@@ -17,12 +17,12 @@ docs/src/explanation.md
 
 ```
 
-# spaday-collab
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/img/logo-dark.svg">
-  <img src="docs/img/logo-light.svg" alt="spaday-collab" width="180">
-</picture>
+<a href="https://github.com/1kbgz/spaday-collab">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/1kbgz/spaday-collab/raw/main/docs/img/logo-dark.webp?raw=true">
+    <img alt="spaday-collab logo, shared pointers inside a browser window" src="https://github.com/1kbgz/spaday-collab/raw/main/docs/img/logo-light.webp?raw=true" width="1200">
+  </picture>
+</a>
 
 [![Build Status](https://github.com/1kbgz/spaday-collab/actions/workflows/build.yaml/badge.svg)](https://github.com/1kbgz/spaday-collab/actions/workflows/build.yaml)
 [![PyPI](https://img.shields.io/pypi/v/spaday-collab.svg)](https://pypi.org/project/spaday-collab/)
