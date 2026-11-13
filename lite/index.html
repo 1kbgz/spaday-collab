@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>spaday-collab in Pyodide</title>
+  </head>
+  <body>
+    <p id="status">Loading Python in the browser…</p>
+    <div id="root"></div>
+    <script type="module">
+      import { init, mount, Store } from "./runtime/spaday/cdn/index.js";
+      import "./components/collab/cdn/index.js";
+      try {
+        const { loadPyodide } =
+          await import("https://cdn.jsdelivr.net/pyodide/v314.0.4/full/pyodide.mjs");
+        const pyodide = await loadPyodide();
+        await pyodide.loadPackage("micropip");
+        const wheels = await (await fetch("./wheels.json")).json();
+        pyodide.globals.set(
+          "wheels_json",
+          JSON.stringify(
+            Object.values(wheels).map(
+              (path) => new URL(path, location.href).href,
+            ),
+          ),
+        );
+        const result = JSON.parse(
+          await pyodide.runPythonAsync(`
+import json, micropip
+await micropip.install(json.loads(wheels_json))
+from spaday_collab.gallery import gallery, STYLE
+json.dumps({"tree":gallery().to_node(), "style":STYLE})
+`),
+        );
+        await init({ module_or_path: "./runtime/spaday/pkg/spaday_bg.wasm" });
+        const style = document.createElement("style");
+        style.textContent = result.style;
+        document.head.append(style);
+        mount(document.querySelector("#root"), result.tree, new Store({}));
+        document.querySelector("#status").remove();
+      } catch (error) {
+        document.querySelector("#status").textContent = String(error);
+        throw error;
+      }
+    </script>
+  </body>
+</html>

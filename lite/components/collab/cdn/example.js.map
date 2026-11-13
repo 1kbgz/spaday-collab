@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../examples/example.js"],
+  "sourcesContent": ["// Application mapping from scoped awareness to the optional pointer UI.\ndocument.addEventListener(\n  \"spaday:wire-client\",\n  ({ detail: { namespace, store } }) => {\n    if (namespace !== \"document\") return;\n    const render = () =>\n      store.set(\n        \"pointers\",\n        (store.get(\"remote_activity\") ?? []).map(({ peer, state }) => ({\n          peer,\n          pointer: state?.pointer,\n          label: state?.label,\n          color: state?.color,\n        })),\n      );\n    const stop = store.subscribe(\"remote_activity\", render);\n    render();\n    window.addEventListener(\"pagehide\", (event) => {\n      if (!event.persisted) stop();\n    });\n  },\n);\n"],
+  "mappings": "AACA,SAAS,iBACP,qBACA,CAAC,CAAE,OAAQ,CAAE,UAAAA,EAAW,MAAAC,CAAM,CAAE,IAAM,CACpC,GAAID,IAAc,WAAY,OAC9B,IAAME,EAAS,IACbD,EAAM,IACJ,YACCA,EAAM,IAAI,iBAAiB,GAAK,CAAC,GAAG,IAAI,CAAC,CAAE,KAAAE,EAAM,MAAAC,CAAM,KAAO,CAC7D,KAAAD,EACA,QAASC,GAAO,QAChB,MAAOA,GAAO,MACd,MAAOA,GAAO,KAChB,EAAE,CACJ,EACIC,EAAOJ,EAAM,UAAU,kBAAmBC,CAAM,EACtDA,EAAO,EACP,OAAO,iBAAiB,WAAaI,GAAU,CACxCA,EAAM,WAAWD,EAAK,CAC7B,CAAC,CACH,CACF",
+  "names": ["namespace", "store", "render", "peer", "state", "stop", "event"]
+}
