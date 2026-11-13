@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "1.0.0",
+  "modules": [
+    {
+      "path": "src/ts/index.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "Pointers",
+          "customElement": true,
+          "tagName": "spaday-pointers",
+          "summary": "Optional shared pointers and hover outlines.",
+          "attributes": [
+            {
+              "name": "peers",
+              "type": {
+                "text": "unknown"
+              },
+              "description": "Array of {peer, pointer: {target, x, y} | null, label?, color?}. Coordinates are normalized to a target. Labels are plain text."
+            }
+          ],
+          "events": [
+            {
+              "name": "pointer-change",
+              "type": {
+                "text": "CustomEvent"
+              },
+              "description": "detail.pointer is {target, x, y} or null. Emitted for local mouse/pen movement or withdrawal."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
