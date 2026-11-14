@@ -21,20 +21,39 @@ class Document(BaseModel):
 def page(user):
     return element(
         "main",
-        element("h1", "Shared pointers and focus"),
+        element("h1", "Shared pointers and focus", **{"data-collab-text": "title"}),
         element("nav", element("a", "Alice", href="/"), element("a", "Bob", href="/bob")),
         element("p", f"Signed in as {user}. Open the other link in another browser to see their pointer."),
-        element("p", "Names and colors are example settings. Both users can edit; URL names are not authentication."),
+        element(
+            "p",
+            "Names and colors are example settings. Both users can edit; URL names are not authentication.",
+            **{"data-collab-text": "identity-note"},
+        ),
         element(
             "label",
             element("input", type="checkbox").bind("checked", "page_pointers", mode="two-way"),
             " Share my pointer across the page",
         ),
         element(
+            "fieldset",
+            element("legend", "Share my activity"),
+            *[
+                element("label", element("input", type="checkbox").bind("checked", key, mode="two-way"), label)
+                for key, label in (
+                    ("share_selection", " Page-text selections"),
+                    ("share_focus", " Focus and textarea selections"),
+                    ("share_clicks", " Click indicators"),
+                    ("share_viewport", " Viewport position"),
+                )
+            ],
+        ),
+        element("p", id="viewport-activity").bind("textContent", "viewport_activity"),
+        element(
             "p",
             "Outside the note and review section, pointers use relative viewport positions. "
             "Over those targets, they follow the same content in the other browser. "
-            "Missing or off-screen targets are hidden.",
+            "Missing or off-screen targets are hidden. Select this text to highlight it in the other browser.",
+            **{"data-collab-text": "pointer-help"},
         ),
         element(
             "label",
@@ -48,15 +67,20 @@ def page(user):
         ),
         element(
             "section",
-            element("h2", "Review"),
+            element("h2", "Review", **{"data-collab-text": "review-heading"}),
             element("span", id="review-focus", class_="focus-status", role="status").bind("textContent", "focus_review"),
-            element("p", "Hover here to point out this section, or focus it with Tab to mark it for review."),
+            element(
+                "p",
+                "Hover here to point out this section, select its text, or focus it with Tab to mark it for review.",
+                **{"data-collab-text": "review-help"},
+            ),
             tabindex=0,
             **{"data-collab-target": "review", "aria-label": "Review"},
         ),
         element(
             "p",
             "Focus and recent typing appear beside the target. Remote selections and carets appear inside the note. These indicators do not lock fields or grant editing access.",
+            **{"data-collab-text": "activity-help"},
         ),
         element("p", "Connected: ", element("output").bind("textContent", "document.connected")),
         Pointers().bind("peers", "pointers").on("pointer-change", SetField("pointer", event_value("pointer"))),
@@ -87,6 +111,11 @@ def create_app(*, codec="json"):
             styles=[
                 STYLE
                 + """
+fieldset { margin-top:1rem; border:1px solid #344854; border-radius:.5rem; }
+fieldset label { margin:.4rem 0; }
+#viewport-activity { min-height:1.5em; color:#90c2ff; }
+.click-marker { position:fixed; width:24px; height:24px; margin:-12px 0 0 -12px; border:3px solid; border-radius:50%; pointer-events:none; z-index:1001; animation:click-fade .8s linear forwards; }
+@keyframes click-fade { to { opacity:0; } }
 .note-editor { position:relative; margin-top:.5rem; }
 .note-editor textarea { margin:0; }
 .text-presence { position:absolute; overflow:hidden; pointer-events:none; }
@@ -102,6 +131,11 @@ label:has(.focus-status:not(:empty)) textarea, section:has(.focus-status:not(:em
                 "color": color,
                 "pointers": [],
                 "page_pointers": True,
+                "share_selection": True,
+                "share_focus": True,
+                "share_clicks": False,
+                "share_viewport": False,
+                "viewport_activity": "",
                 "pointer": None,
                 "focus_note": "",
                 "focus_review": "",
