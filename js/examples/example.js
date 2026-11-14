@@ -1,4 +1,5 @@
 import { domTargets } from "../src/ts/pointers.js";
+import { connectFocus } from "./focus.js";
 import { pageTargets } from "./page-pointers.js";
 
 // Application mapping from scoped awareness to the optional pointer UI.
@@ -6,17 +7,40 @@ document.addEventListener(
   "spaday:wire-client",
   ({ detail: { namespace, store } }) => {
     if (namespace !== "document") return;
-    const render = () =>
+    const render = () => {
+      const peers = store.get("remote_activity") ?? [];
       store.set(
         "pointers",
-        (store.get("remote_activity") ?? []).map(({ peer, state }) => ({
+        peers.map(({ peer, state }) => ({
           peer,
           pointer: state?.pointer,
           label: state?.label,
           color: state?.color,
         })),
       );
+      for (const target of ["note", "review"]) {
+        const labels = peers.flatMap(({ state }) =>
+          state?.focus?.target === target && typeof state.label === "string"
+            ? [
+                `${state.label}: ${state.focus.editing === true ? "Editing" : "Focused"}`,
+              ]
+            : [],
+        );
+        store.set(`focus_${target}`, [...new Set(labels)].join(" · "));
+      }
+    };
     let active = true;
+    let focus = null;
+    let stopFocus = () => {};
+    const publish = () => {
+      if (active)
+        store.set("activity", {
+          pointer: store.get("pointer"),
+          focus,
+          label: store.get("name"),
+          color: store.get("color"),
+        });
+    };
     const configure = () =>
       queueMicrotask(() => {
         if (!active) return;
@@ -27,12 +51,21 @@ document.addEventListener(
       });
     const stops = [
       store.subscribe("remote_activity", render),
+      store.subscribe("pointer", publish),
       store.subscribe("page_pointers", configure),
     ];
     configure();
     render();
+    queueMicrotask(() => {
+      if (active)
+        stopFocus = connectFocus((value) => {
+          focus = value;
+          publish();
+        });
+    });
     window.addEventListener("pagehide", (event) => {
       if (!event.persisted) {
+        stopFocus();
         active = false;
         stops.forEach((stop) => stop());
       }

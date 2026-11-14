@@ -40,6 +40,29 @@ A component target takes priority. Otherwise, the wrapper uses a normalized view
 
 Viewport positions show approximate activity when users have different page layouts or scroll positions. Component positions identify the same content. If a component target is missing or off-screen in the receiving browser, its pointer stays hidden; the example does not reinterpret it as a page position. Blur, leaving the page, and awareness disconnects still withdraw pointers.
 
+## Show focus and editing activity
+
+Run the local example in two browsers. Focus the shared note as Alice: Bob sees “Alice: Focused”
+beside it. Type to show “Alice: Editing”; after 1.5 seconds without input, the label returns to
+“Focused”. Press Tab to move the focus indicator to the review section. Moving the pointer does
+not change keyboard focus.
+
+To adapt this behavior, copy `js/examples/focus.js` and the awareness mapping in
+`js/examples/example.js`. The helper reports `{target, editing}` or `null`, using the focused
+HTML element's nearest `data-collab-target`. Keep this state alongside the pointer in one awareness
+value so updating either field preserves the other. Use `SetField("pointer", event_value("pointer"))`
+for pointer events, then compose the awareness value in the store subscription as the example does.
+
+Render each remote target's labels through ordinary Python components and `textContent` bindings.
+Clear focus on window blur, hidden pages, and navigation. Disconnect the helper when removing the
+page integration. The managed awareness connection removes disconnected peers and republishes
+current local state after reconnect.
+
+The helper and its timeout are example policy, not package exports. For virtualized rows or shadow
+components, map the component's focus/selection events to stable record or field IDs in your adapter;
+do not use DOM row indices as shared identities. Keep editor text anchors in the editor's existing
+collaboration API. Focus labels communicate activity and do not lock fields or grant permission.
+
 ## Replace the renderer
 
 Import `connectPointers` from `/components/collab/cdn/index.js`. Pass a geometry adapter, a callback for local state, and a callback for projected remote coordinates. Call `render(remotePeers)` when awareness changes and `disconnect()` when removing the integration. No `Pointers` element is required.
