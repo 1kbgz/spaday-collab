@@ -26,6 +26,20 @@ pointers.adapter = {
 
 Use stable record IDs, including a field ID when appropriate. Return `undefined` for deleted, collapsed, or unmounted targets. Provide `visibleBounds` for clipped rows, and reject obscured points in `hit`. Dispatch a bubbling `viewport-change` event when internal layout changes cannot be observed from the supplied roots.
 
+## Track pointers outside component targets
+
+Run `python -m spaday_collab.example` and leave **Share my pointer across the page** checked. The checkbox controls local sharing; remote pointers remain visible when it is unchecked.
+
+The example's `js/examples/page-pointers.js` wraps a `PointerAdapter`:
+
+```javascript
+pointers.adapter = pageTargets(componentAdapter, true);
+```
+
+A component target takes priority. Otherwise, the wrapper uses a normalized viewport position. Target IDs are prefixed to distinguish component targets from the page fallback. This helper is example code, not a package export; copy it into your application and wrap the same adapter used for table rows, tree items, or ordinary HTML.
+
+Viewport positions show approximate activity when users have different page layouts or scroll positions. Component positions identify the same content. If a component target is missing or off-screen in the receiving browser, its pointer stays hidden; the example does not reinterpret it as a page position. Blur, leaving the page, and awareness disconnects still withdraw pointers.
+
 ## Replace the renderer
 
 Import `connectPointers` from `/components/collab/cdn/index.js`. Pass a geometry adapter, a callback for local state, and a callback for projected remote coordinates. Call `render(remotePeers)` when awareness changes and `disconnect()` when removing the integration. No `Pointers` element is required.

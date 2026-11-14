@@ -125,6 +125,9 @@
     <a href="#adapt-a-virtualized-component">Adapt a virtualized component</a>
   </li>
   <li class="fd-toc-item" data-depth="1">
+    <a href="#track-pointers-outside-component-targets">Track pointers outside component targets</a>
+  </li>
+  <li class="fd-toc-item" data-depth="1">
     <a href="#replace-the-renderer">Replace the renderer</a>
   </li>
   <li class="fd-toc-item" data-depth="1">
@@ -161,6 +164,16 @@
 </pre></div>
 </div>
 <p>Use stable record IDs, including a field ID when appropriate. Return <code class="docutils literal notranslate"><span class="pre">undefined</span></code> for deleted, collapsed, or unmounted targets. Provide <code class="docutils literal notranslate"><span class="pre">visibleBounds</span></code> for clipped rows, and reject obscured points in <code class="docutils literal notranslate"><span class="pre">hit</span></code>. Dispatch a bubbling <code class="docutils literal notranslate"><span class="pre">viewport-change</span></code> event when internal layout changes cannot be observed from the supplied roots.</p>
+</section>
+<section id="track-pointers-outside-component-targets">
+<h2>Track pointers outside component targets<a class="headerlink" href="#track-pointers-outside-component-targets" title="Link to this heading">¶</a></h2>
+<p>Run <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">spaday_collab.example</span></code> and leave <strong>Share my pointer across the page</strong> checked. The checkbox controls local sharing; remote pointers remain visible when it is unchecked.</p>
+<p>The example’s <code class="docutils literal notranslate"><span class="pre">js/examples/page-pointers.js</span></code> wraps a <code class="docutils literal notranslate"><span class="pre">PointerAdapter</span></code>:</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="nx">pointers</span><span class="p">.</span><span class="nx">adapter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">pageTargets</span><span class="p">(</span><span class="nx">componentAdapter</span><span class="p">,</span><span class="w"> </span><span class="kc">true</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>A component target takes priority. Otherwise, the wrapper uses a normalized viewport position. Target IDs are prefixed to distinguish component targets from the page fallback. This helper is example code, not a package export; copy it into your application and wrap the same adapter used for table rows, tree items, or ordinary HTML.</p>
+<p>Viewport positions show approximate activity when users have different page layouts or scroll positions. Component positions identify the same content. If a component target is missing or off-screen in the receiving browser, its pointer stays hidden; the example does not reinterpret it as a page position. Blur, leaving the page, and awareness disconnects still withdraw pointers.</p>
 </section>
 <section id="replace-the-renderer">
 <h2>Replace the renderer<a class="headerlink" href="#replace-the-renderer" title="Link to this heading">¶</a></h2>
@@ -211,6 +224,9 @@
   </li>
   <li class="fd-toc-item" data-depth="1">
     <a href="#adapt-a-virtualized-component">Adapt a virtualized component</a>
+  </li>
+  <li class="fd-toc-item" data-depth="1">
+    <a href="#track-pointers-outside-component-targets">Track pointers outside component targets</a>
   </li>
   <li class="fd-toc-item" data-depth="1">
     <a href="#replace-the-renderer">Replace the renderer</a>
