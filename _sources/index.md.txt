@@ -73,7 +73,7 @@ pip install "spaday-collab[examples]"
 python -m spaday_collab.example
 ```
 
-Open http://127.0.0.1:8044/ and http://127.0.0.1:8044/bob in separate browsers. The **Share my pointer across the page** checkbox enables a viewport fallback outside the note and review section. Over those targets, pointers follow the same content in the other browser. Focus the note or Tab to the review section to show a focus label in the other browser. Typing briefly changes that label to “Editing” while the shared note updates. Demo identities are selected by URL; production applications must authenticate users and assign permissions on the server.
+Open http://127.0.0.1:8044/ and http://127.0.0.1:8044/bob in separate browsers. The **Share my pointer across the page** checkbox enables a viewport fallback outside the note and review section. Over those targets, pointers follow the same content in the other browser. Focus the note or Tab to the review section to show a focus label in the other browser. Typing briefly changes that label to “Editing” while the shared note updates. Select text to show a remote highlight, or place the caret to show its position. **Share my activity** also controls page-text highlighting, transient click markers, and optional viewport progress; receiving activity never scrolls or activates controls. Demo identities are selected by URL; production applications must authenticate users and assign permissions on the server.
 
 From a checkout, run `make develop`, `make build`, and `make test`. `make pyodide-example` builds `dist/lite`; `make test-pyodide-example` checks that preview in Chromium.
 

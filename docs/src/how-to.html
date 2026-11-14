@@ -131,6 +131,12 @@
     <a href="#show-focus-and-editing-activity">Show focus and editing activity</a>
   </li>
   <li class="fd-toc-item" data-depth="1">
+    <a href="#show-a-textarea-selection">Show a textarea selection</a>
+  </li>
+  <li class="fd-toc-item" data-depth="1">
+    <a href="#share-other-page-activity">Share other page activity</a>
+  </li>
+  <li class="fd-toc-item" data-depth="1">
     <a href="#replace-the-renderer">Replace the renderer</a>
   </li>
   <li class="fd-toc-item" data-depth="1">
@@ -185,7 +191,7 @@ beside it. Type to show “Alice: Editing”; after 1.5 seconds without input, t
 “Focused”. Press Tab to move the focus indicator to the review section. Moving the pointer does
 not change keyboard focus.</p>
 <p>To adapt this behavior, copy <code class="docutils literal notranslate"><span class="pre">js/examples/focus.js</span></code> and the awareness mapping in
-<code class="docutils literal notranslate"><span class="pre">js/examples/example.js</span></code>. The helper reports <code class="docutils literal notranslate"><span class="pre">{target,</span> <span class="pre">editing}</span></code> or <code class="docutils literal notranslate"><span class="pre">null</span></code>, using the focused
+<code class="docutils literal notranslate"><span class="pre">js/examples/example.js</span></code>. The helper reports <code class="docutils literal notranslate"><span class="pre">{target,</span> <span class="pre">editing,</span> <span class="pre">selection?}</span></code> or <code class="docutils literal notranslate"><span class="pre">null</span></code>, using the focused
 HTML element’s nearest <code class="docutils literal notranslate"><span class="pre">data-collab-target</span></code>. Keep this state alongside the pointer in one awareness
 value so updating either field preserves the other. Use <code class="docutils literal notranslate"><span class="pre">SetField(&quot;pointer&quot;,</span> <span class="pre">event_value(&quot;pointer&quot;))</span></code>
 for pointer events, then compose the awareness value in the store subscription as the example does.</p>
@@ -197,6 +203,66 @@ current local state after reconnect.</p>
 components, map the component’s focus/selection events to stable record or field IDs in your adapter;
 do not use DOM row indices as shared identities. Keep editor text anchors in the editor’s existing
 collaboration API. Focus labels communicate activity and do not lock fields or grant permission.</p>
+</section>
+<section id="show-a-textarea-selection">
+<h2>Show a textarea selection<a class="headerlink" href="#show-a-textarea-selection" title="Link to this heading">¶</a></h2>
+<p>Select text in Alice’s shared note to show a colored highlight in Bob’s textarea. Collapse the
+selection to show a caret; a backward selection places that caret at its active end. Each browser
+uses its own wrapping, textarea size, and scroll position. The overlay ignores pointer input.</p>
+<p>The example helper <code class="docutils literal notranslate"><span class="pre">js/examples/text-selection.js</span></code> measures text in a hidden mirror of the textarea
+and draws the remote ranges above it. Focus changes publish the textarea’s UTF-16 <code class="docutils literal notranslate"><span class="pre">anchor</span></code> and
+<code class="docutils literal notranslate"><span class="pre">head</span></code> offsets along with the exact <code class="docutils literal notranslate"><span class="pre">text</span></code> snapshot. Only matching snapshots render, so a model
+update arriving before its awareness update hides stale marks. Empty text and trailing newlines
+still have caret positions. Blur, target changes, and disconnected peers remove the marks.</p>
+<p>This small-note example includes the note text in awareness to validate offsets. It does not
+transform selections through concurrent edits or turn the textarea into a text CRDT. Use
+spaday-codemirror’s anchored selections for collaborative code editing; keep this mirror and
+snapshot policy in example code.</p>
+</section>
+<section id="share-other-page-activity">
+<h2>Share other page activity<a class="headerlink" href="#share-other-page-activity" title="Link to this heading">¶</a></h2>
+<p>Use <strong>Share my activity</strong> in the local example to control each outgoing signal independently:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Control</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Remote display</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Page-text selections</p></td>
+<td><p>On</p></td>
+<td><p>Selected text highlighted in matching content.</p></td>
+</tr>
+<tr class="row-odd"><td><p>Focus and textarea selections</p></td>
+<td><p>On</p></td>
+<td><p>Focus/editing labels and textarea ranges/carets.</p></td>
+</tr>
+<tr class="row-even"><td><p>Click indicators</p></td>
+<td><p>Off</p></td>
+<td><p>A colored marker that fades after 800 ms.</p></td>
+</tr>
+<tr class="row-odd"><td><p>Viewport position</p></td>
+<td><p>Off</p></td>
+<td><p>A percentage showing approximate progress down the page.</p></td>
+</tr>
+</tbody>
+</table>
+<p>Turning a control off withdraws that local state. It does not hide incoming activity. The pointer
+checkbox remains independent. All signals use the same awareness connection.</p>
+<p>For ordinary text, mark static, non-overlapping blocks with unique <code class="docutils literal notranslate"><span class="pre">data-collab-text</span></code> IDs. The
+<code class="docutils literal notranslate"><span class="pre">js/examples/page-selection.js</span></code> helper splits a native selection across those blocks and sends exact
+text snapshots plus UTF-16 offsets. The receiver resolves its own text nodes, rejects mismatched
+snapshots, and uses the <a class="reference external" href="https://developer.mozilla.org/en-US/docs/Web/API/CSS_Custom_Highlight_API">CSS Custom Highlight API</a>
+to paint ranges without replacing its local selection. Keep form controls, private text, and presence
+labels outside these opted-in blocks. Browsers without that API omit the page highlights.</p>
+<p><code class="docutils literal notranslate"><span class="pre">js/examples/page-activity.js</span></code> demonstrates click and viewport sharing. Clicks use the existing
+geometry adapter; keyboard activation uses the activated element’s center. Receiving a click only
+paints a marker and never activates a control. Markers expire, ignore duplicate deliveries, and clear
+on scroll or disconnect. Viewport progress is approximate when layouts differ. It never scrolls the
+receiving page; a scrollbar overlay or minimap can be added by the application if useful.</p>
+<p>These helpers and defaults are example policy, not public library APIs. Dispose the helpers when
+removing the integration; blur, hidden pages, and page lifecycle events withdraw local activity.</p>
 </section>
 <section id="replace-the-renderer">
 <h2>Replace the renderer<a class="headerlink" href="#replace-the-renderer" title="Link to this heading">¶</a></h2>
@@ -253,6 +319,12 @@ collaboration API. Focus labels communicate activity and do not lock fields or g
   </li>
   <li class="fd-toc-item" data-depth="1">
     <a href="#show-focus-and-editing-activity">Show focus and editing activity</a>
+  </li>
+  <li class="fd-toc-item" data-depth="1">
+    <a href="#show-a-textarea-selection">Show a textarea selection</a>
+  </li>
+  <li class="fd-toc-item" data-depth="1">
+    <a href="#share-other-page-activity">Share other page activity</a>
   </li>
   <li class="fd-toc-item" data-depth="1">
     <a href="#replace-the-renderer">Replace the renderer</a>
