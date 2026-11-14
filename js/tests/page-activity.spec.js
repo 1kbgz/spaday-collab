@@ -73,3 +73,49 @@ test("optional click markers expire, deduplicate, and clean up without animation
     await page.evaluate(() => count),
   );
 });
+
+test("labels publish one click while direct and keyboard activations remain distinct", async ({
+  page,
+}) => {
+  await page.route("**/src/ts/pointers.js", (route) =>
+    route.fulfill({
+      contentType: "text/javascript",
+      body: 'export { isPointer } from "/dist/esm/index.js";',
+    }),
+  );
+  await page.goto("/dist/index.html");
+  await page.evaluate(async () => {
+    const { connectClicks } = await import("/examples/page-activity.js");
+    document.body.innerHTML =
+      '<label><input type="checkbox"><span>Click indicators</span><a href="#help">Help</a></label><input id="outside" type="checkbox"><label for="outside">External label</label>';
+    document
+      .querySelector("a")
+      .addEventListener("click", (e) => e.preventDefault());
+    window.published = [];
+    const tracker = connectClicks(
+      {
+        hitTest: () => "page",
+        resolve: () => ({
+          bounds: new DOMRect(0, 0, innerWidth, innerHeight),
+          hit: () => true,
+        }),
+      },
+      (value) => {
+        if (value) published.push(value);
+      },
+    );
+    tracker.enable(true);
+  });
+  await page.getByText("Click indicators", { exact: true }).click();
+  expect(await page.evaluate(() => published.length)).toBe(1);
+  await page.locator("input").first().click();
+  expect(await page.evaluate(() => published.length)).toBe(2);
+  await page.locator("input").first().press("Space");
+  expect(await page.evaluate(() => published.length)).toBe(3);
+  await page.getByText("External label", { exact: true }).click();
+  expect(await page.evaluate(() => published.length)).toBe(4);
+  await page.getByRole("link", { name: "Help" }).click();
+  expect(await page.evaluate(() => published.length)).toBe(5);
+  await page.locator("input").first().dblclick();
+  expect(await page.evaluate(() => published.length)).toBe(7);
+});
