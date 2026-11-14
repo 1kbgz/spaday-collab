@@ -27,6 +27,17 @@ def page(user):
         element("p", "Names and colors are example settings. Both users can edit; URL names are not authentication."),
         element(
             "label",
+            element("input", type="checkbox").bind("checked", "page_pointers", mode="two-way"),
+            " Share my pointer across the page",
+        ),
+        element(
+            "p",
+            "Outside the note and review section, pointers use relative viewport positions. "
+            "Over those targets, they follow the same content in the other browser. "
+            "Missing or off-screen targets are hidden.",
+        ),
+        element(
+            "label",
             "Shared note",
             element("textarea", **{"data-collab-target": "note", "aria-label": "Shared note"}).bind("value", "document.note", mode="two-way"),
         ),
@@ -72,7 +83,7 @@ def create_app(*, codec="json"):
             packages=[package],
             title="Shared pointers",
             styles=[STYLE],
-            store={"name": user.title(), "color": color, "pointers": []},
+            store={"name": user.title(), "color": color, "pointers": [], "page_pointers": True},
             scripts=["/components/collab/cdn/example.js"],
             wire=Wire(
                 f"/ws?user={user}",
