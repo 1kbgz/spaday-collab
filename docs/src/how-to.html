@@ -128,6 +128,9 @@
     <a href="#track-pointers-outside-component-targets">Track pointers outside component targets</a>
   </li>
   <li class="fd-toc-item" data-depth="1">
+    <a href="#show-focus-and-editing-activity">Show focus and editing activity</a>
+  </li>
+  <li class="fd-toc-item" data-depth="1">
     <a href="#replace-the-renderer">Replace the renderer</a>
   </li>
   <li class="fd-toc-item" data-depth="1">
@@ -174,6 +177,26 @@
 </div>
 <p>A component target takes priority. Otherwise, the wrapper uses a normalized viewport position. Target IDs are prefixed to distinguish component targets from the page fallback. This helper is example code, not a package export; copy it into your application and wrap the same adapter used for table rows, tree items, or ordinary HTML.</p>
 <p>Viewport positions show approximate activity when users have different page layouts or scroll positions. Component positions identify the same content. If a component target is missing or off-screen in the receiving browser, its pointer stays hidden; the example does not reinterpret it as a page position. Blur, leaving the page, and awareness disconnects still withdraw pointers.</p>
+</section>
+<section id="show-focus-and-editing-activity">
+<h2>Show focus and editing activity<a class="headerlink" href="#show-focus-and-editing-activity" title="Link to this heading">¶</a></h2>
+<p>Run the local example in two browsers. Focus the shared note as Alice: Bob sees “Alice: Focused”
+beside it. Type to show “Alice: Editing”; after 1.5 seconds without input, the label returns to
+“Focused”. Press Tab to move the focus indicator to the review section. Moving the pointer does
+not change keyboard focus.</p>
+<p>To adapt this behavior, copy <code class="docutils literal notranslate"><span class="pre">js/examples/focus.js</span></code> and the awareness mapping in
+<code class="docutils literal notranslate"><span class="pre">js/examples/example.js</span></code>. The helper reports <code class="docutils literal notranslate"><span class="pre">{target,</span> <span class="pre">editing}</span></code> or <code class="docutils literal notranslate"><span class="pre">null</span></code>, using the focused
+HTML element’s nearest <code class="docutils literal notranslate"><span class="pre">data-collab-target</span></code>. Keep this state alongside the pointer in one awareness
+value so updating either field preserves the other. Use <code class="docutils literal notranslate"><span class="pre">SetField(&quot;pointer&quot;,</span> <span class="pre">event_value(&quot;pointer&quot;))</span></code>
+for pointer events, then compose the awareness value in the store subscription as the example does.</p>
+<p>Render each remote target’s labels through ordinary Python components and <code class="docutils literal notranslate"><span class="pre">textContent</span></code> bindings.
+Clear focus on window blur, hidden pages, and navigation. Disconnect the helper when removing the
+page integration. The managed awareness connection removes disconnected peers and republishes
+current local state after reconnect.</p>
+<p>The helper and its timeout are example policy, not package exports. For virtualized rows or shadow
+components, map the component’s focus/selection events to stable record or field IDs in your adapter;
+do not use DOM row indices as shared identities. Keep editor text anchors in the editor’s existing
+collaboration API. Focus labels communicate activity and do not lock fields or grant permission.</p>
 </section>
 <section id="replace-the-renderer">
 <h2>Replace the renderer<a class="headerlink" href="#replace-the-renderer" title="Link to this heading">¶</a></h2>
@@ -227,6 +250,9 @@
   </li>
   <li class="fd-toc-item" data-depth="1">
     <a href="#track-pointers-outside-component-targets">Track pointers outside component targets</a>
+  </li>
+  <li class="fd-toc-item" data-depth="1">
+    <a href="#show-focus-and-editing-activity">Show focus and editing activity</a>
   </li>
   <li class="fd-toc-item" data-depth="1">
     <a href="#replace-the-renderer">Replace the renderer</a>
