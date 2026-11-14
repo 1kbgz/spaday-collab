@@ -80,6 +80,36 @@ transform selections through concurrent edits or turn the textarea into a text C
 spaday-codemirror's anchored selections for collaborative code editing; keep this mirror and
 snapshot policy in example code.
 
+## Share other page activity
+
+Use **Share my activity** in the local example to control each outgoing signal independently:
+
+| Control                       | Default | Remote display                                           |
+| ----------------------------- | ------- | -------------------------------------------------------- |
+| Page-text selections          | On      | Selected text highlighted in matching content.           |
+| Focus and textarea selections | On      | Focus/editing labels and textarea ranges/carets.         |
+| Click indicators              | Off     | A colored marker that fades after 800 ms.                |
+| Viewport position             | Off     | A percentage showing approximate progress down the page. |
+
+Turning a control off withdraws that local state. It does not hide incoming activity. The pointer
+checkbox remains independent. All signals use the same awareness connection.
+
+For ordinary text, mark static, non-overlapping blocks with unique `data-collab-text` IDs. The
+`js/examples/page-selection.js` helper splits a native selection across those blocks and sends exact
+text snapshots plus UTF-16 offsets. The receiver resolves its own text nodes, rejects mismatched
+snapshots, and uses the [CSS Custom Highlight API](https://developer.mozilla.org/en-US/docs/Web/API/CSS_Custom_Highlight_API)
+to paint ranges without replacing its local selection. Keep form controls, private text, and presence
+labels outside these opted-in blocks. Browsers without that API omit the page highlights.
+
+`js/examples/page-activity.js` demonstrates click and viewport sharing. Clicks use the existing
+geometry adapter; keyboard activation uses the activated element's center. Receiving a click only
+paints a marker and never activates a control. Markers expire, ignore duplicate deliveries, and clear
+on scroll or disconnect. Viewport progress is approximate when layouts differ. It never scrolls the
+receiving page; a scrollbar overlay or minimap can be added by the application if useful.
+
+These helpers and defaults are example policy, not public library APIs. Dispose the helpers when
+removing the integration; blur, hidden pages, and page lifecycle events withdraw local activity.
+
 ## Replace the renderer
 
 Import `connectPointers` from `/components/collab/cdn/index.js`. Pass a geometry adapter, a callback for local state, and a callback for projected remote coordinates. Call `render(remotePeers)` when awareness changes and `disconnect()` when removing the integration. No `Pointers` element is required.

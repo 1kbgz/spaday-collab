@@ -64,7 +64,9 @@ uvicorn.Server(uvicorn.Config(create_app(),log_level="error")).run(sockets=[sock
       pages.push(page);
     }
     const [alice, bob] = pages;
-    await expect(alice.getByRole("checkbox")).toBeChecked();
+    await expect(
+      alice.getByRole("checkbox", { name: "Share my pointer across the page" }),
+    ).toBeChecked();
     await bob.setViewportSize({ width: 950, height: 850 });
     await alice.mouse.move(10, 10);
     await expect(bob.locator("spaday-pointers .label")).toHaveText("Alice");
@@ -76,7 +78,9 @@ uvicorn.Server(uvicorn.Config(create_app(),log_level="error")).run(sockets=[sock
     await expect
       .poll(async () => (await cursor.boundingBox())?.x)
       .toBeCloseTo((10 * 950) / alice.viewportSize().width, 1);
-    await bob.getByRole("checkbox").uncheck();
+    await bob
+      .getByRole("checkbox", { name: "Share my pointer across the page" })
+      .uncheck();
     await expect(bob.locator("spaday-pointers .label")).toHaveText("Alice");
     await bob.evaluate(() => {
       document.body.style.minHeight = "2000px";
@@ -87,12 +91,16 @@ uvicorn.Server(uvicorn.Config(create_app(),log_level="error")).run(sockets=[sock
     await expect(bob.locator("spaday-pointers .cursor")).toHaveCount(0);
     await bob.evaluate(() => window.scrollTo(0, 0));
     await expect(bob.locator("spaday-pointers .label")).toHaveText("Alice");
-    await alice.getByRole("checkbox").uncheck();
+    await alice
+      .getByRole("checkbox", { name: "Share my pointer across the page" })
+      .uncheck();
     await alice.mouse.move(10, 10);
     await expect(bob.locator("spaday-pointers .cursor")).toHaveCount(0);
     await alice.getByRole("textbox").hover();
     await expect(bob.locator("spaday-pointers .label")).toHaveText("Alice");
-    await alice.getByRole("checkbox").check();
+    await alice
+      .getByRole("checkbox", { name: "Share my pointer across the page" })
+      .check();
     await alice.mouse.move(10, 10);
     await expect(bob.locator("spaday-pointers .hover")).toHaveCSS(
       "width",
@@ -104,7 +112,8 @@ uvicorn.Server(uvicorn.Config(create_app(),log_level="error")).run(sockets=[sock
         async () =>
           (await bob.locator("spaday-pointers .hover").boundingBox())?.width,
       )
-      .toBe((await bob.getByRole("textbox").boundingBox()).width);
+      .toBe((await bob.getByRole("textbox").boundingBox())?.width);
+    await bob.setViewportSize({ width: 950, height: 1400 });
     await alice.getByRole("textbox").focus();
     await expect(bob.locator("#note-focus")).toHaveText("Alice: Focused");
     await expect(bob.getByRole("textbox")).toHaveCSS("outline-style", "solid");
@@ -116,15 +125,25 @@ uvicorn.Server(uvicorn.Config(create_app(),log_level="error")).run(sockets=[sock
       .evaluate((el) => el.setSelectionRange(0, 6));
     await expect(bob.locator(".text-selection")).toHaveCount(1);
     await expect(bob.locator(".text-caret")).toHaveCount(1);
+    const expectedWidth = await bob.getByRole("textbox").evaluate((el) => {
+      const context = document.createElement("canvas").getContext("2d");
+      context.font = getComputedStyle(el).font;
+      return context.measureText("Shared").width;
+    });
+    await expect
+      .poll(
+        async () => (await bob.locator(".text-selection").boundingBox()).width,
+      )
+      .toBeCloseTo(expectedWidth, 0);
     const selected = await bob.locator(".text-selection").boundingBox();
     await expect
-      .poll(async () => (await bob.locator(".text-caret").boundingBox()).x)
+      .poll(async () => (await bob.locator(".text-caret").boundingBox())?.x)
       .toBeCloseTo(selected.x + selected.width, 0);
     await alice
       .getByRole("textbox")
       .evaluate((el) => el.setSelectionRange(0, 6, "backward"));
     await expect
-      .poll(async () => (await bob.locator(".text-caret").boundingBox()).x)
+      .poll(async () => (await bob.locator(".text-caret").boundingBox())?.x)
       .toBeCloseTo(selected.x, 0);
     await alice
       .getByRole("textbox")
@@ -171,6 +190,69 @@ uvicorn.Server(uvicorn.Config(create_app(),log_level="error")).run(sockets=[sock
     await alice.mouse.move(1, 1);
     await alice.getByRole("textbox").hover();
     await expect(bob.locator(".label")).toHaveText("Alice");
+    await alice
+      .getByRole("checkbox", { name: "Focus and textarea selections" })
+      .uncheck();
+    await alice.getByRole("textbox").focus();
+    await expect(bob.locator("#note-focus")).toBeEmpty();
+    await expect(bob.locator(".text-caret")).toHaveCount(0);
+    await alice
+      .getByRole("checkbox", { name: "Focus and textarea selections" })
+      .check();
+    await alice.getByRole("textbox").focus();
+    await expect(bob.locator("#note-focus")).toHaveText("Alice: Focused");
+
+    const highlights = () =>
+      bob.evaluate(() =>
+        [...CSS.highlights.values()].flatMap((value) =>
+          [...value].map((range) => range.toString()),
+        ),
+      );
+    const selectPageText = () =>
+      alice.locator('[data-collab-text="pointer-help"]').evaluate((el) => {
+        document.activeElement.blur();
+        const range = document.createRange();
+        const node = document
+          .createTreeWalker(el, NodeFilter.SHOW_TEXT)
+          .nextNode();
+        range.setStart(node, 0);
+        range.setEnd(node, 7);
+        const selection = document.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+      });
+    await selectPageText();
+    await expect.poll(highlights).toEqual(["Outside"]);
+    await alice
+      .getByRole("checkbox", { name: "Page-text selections", exact: true })
+      .uncheck();
+    await selectPageText();
+    await expect.poll(highlights).toEqual([]);
+    await alice
+      .getByRole("checkbox", { name: "Page-text selections", exact: true })
+      .check();
+    await selectPageText();
+    await expect.poll(highlights).toEqual(["Outside"]);
+
+    await alice.getByRole("checkbox", { name: "Click indicators" }).check();
+    await alice.locator("section").click();
+    await expect(bob.locator(".click-marker")).toHaveCount(1);
+    await expect(bob.locator(".click-marker")).toHaveCount(0);
+    await alice.getByRole("checkbox", { name: "Viewport position" }).check();
+    await alice.evaluate(() => {
+      document.body.style.minHeight = "2400px";
+      window.scrollTo(0, 500);
+    });
+    await expect(bob.locator("#viewport-activity")).toContainText("Alice:");
+    const bobScroll = await bob.evaluate(() => scrollY);
+    const progress = await bob.locator("#viewport-activity").textContent();
+    await alice.evaluate(() => window.scrollTo(0, 1000));
+    await expect
+      .poll(() => bob.locator("#viewport-activity").textContent())
+      .not.toBe(progress);
+    expect(await bob.evaluate(() => scrollY)).toBe(bobScroll);
+    await alice.getByRole("checkbox", { name: "Viewport position" }).uncheck();
+    await expect(bob.locator("#viewport-activity")).toBeEmpty();
     await contexts[0].close();
     await expect(bob.locator(".cursor")).toHaveCount(0);
     await expect(bob.locator("#review-focus")).toBeEmpty();
