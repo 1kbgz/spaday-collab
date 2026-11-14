@@ -47,6 +47,16 @@ uvicorn.Server(uvicorn.Config(create_app(),log_level="error")).run(sockets=[sock
       contexts.push(context);
       const page = await context.newPage();
       page.on("pageerror", (e) => errors.push(String(e)));
+      await page.addInitScript(() => {
+        const Socket = WebSocket;
+        window.demoSockets = [];
+        window.WebSocket = class extends Socket {
+          constructor(...args) {
+            super(...args);
+            window.demoSockets.push(this);
+          }
+        };
+      });
       await page.goto(origin + path);
       await expect(page.getByRole("textbox")).toHaveValue(
         "Edit this note from either browser.",
@@ -95,8 +105,25 @@ uvicorn.Server(uvicorn.Config(create_app(),log_level="error")).run(sockets=[sock
           (await bob.locator("spaday-pointers .hover").boundingBox())?.width,
       )
       .toBe((await bob.getByRole("textbox").boundingBox()).width);
+    await alice.getByRole("textbox").focus();
+    await expect(bob.locator("#note-focus")).toHaveText("Alice: Focused");
+    await expect(bob.getByRole("textbox")).toHaveCSS("outline-style", "solid");
     await alice.getByRole("textbox").fill("Shared edit");
+    await expect(bob.locator("#note-focus")).toHaveText("Alice: Editing");
     await expect(bob.getByRole("textbox")).toHaveValue("Shared edit");
+    await alice.locator("section").hover();
+    await expect(bob.locator("#note-focus")).toHaveText("Alice: Focused");
+    await expect(bob.locator("#review-focus")).toBeEmpty();
+    await alice.getByRole("textbox").press("Tab");
+    await expect(bob.locator("#note-focus")).toBeEmpty();
+    await expect(bob.locator("#review-focus")).toHaveText("Alice: Focused");
+    // Mouse movement and keyboard focus are independent awareness fields.
+    await alice.getByRole("textbox").hover();
+    await expect(bob.locator("#review-focus")).toHaveText("Alice: Focused");
+    await alice.evaluate(() => window.dispatchEvent(new Event("blur")));
+    await expect(bob.locator("#review-focus")).toBeEmpty();
+    await alice.evaluate(() => window.dispatchEvent(new Event("focus")));
+    await expect(bob.locator("#review-focus")).toHaveText("Alice: Focused");
     await alice.locator("section").hover();
     await expect(bob.locator("spaday-pointers .label")).toHaveText("Alice");
     await alice.evaluate(() =>
@@ -105,16 +132,26 @@ uvicorn.Server(uvicorn.Config(create_app(),log_level="error")).run(sockets=[sock
       ),
     );
     await expect(bob.locator(".cursor")).toHaveCount(0);
+    await expect(bob.locator("#review-focus")).toBeEmpty();
     await alice.evaluate(() =>
       window.dispatchEvent(
         new PageTransitionEvent("pageshow", { persisted: true }),
       ),
     );
+    await expect(bob.locator("#review-focus")).toHaveText("Alice: Focused");
+    await contexts[0].setOffline(true);
+    await alice.evaluate(() =>
+      window.demoSockets.forEach((socket) => socket.close()),
+    );
+    await expect(bob.locator("#review-focus")).toBeEmpty();
+    await contexts[0].setOffline(false);
+    await expect(bob.locator("#review-focus")).toHaveText("Alice: Focused");
     await alice.mouse.move(1, 1);
     await alice.getByRole("textbox").hover();
     await expect(bob.locator(".label")).toHaveText("Alice");
     await contexts[0].close();
     await expect(bob.locator(".cursor")).toHaveCount(0);
+    await expect(bob.locator("#review-focus")).toBeEmpty();
     expect(errors).toEqual([]);
   } finally {
     await Promise.allSettled(contexts.map((c) => c.close()));

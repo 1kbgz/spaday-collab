@@ -1,10 +1,10 @@
-"""Shared pointers and a shared note over one managed transports connection."""
+"""Shared pointers, focus, and a note over one managed transports connection."""
 
 import asyncio
 from contextlib import asynccontextmanager, suppress
 
 from pydantic import BaseModel
-from spaday import Awareness, SetField, Wire, element, event_value, field, obj
+from spaday import Awareness, SetField, Wire, element, event_value
 from spaday.backends.starlette import PageSpec, build_site
 from starlette.applications import Starlette
 from starlette.routing import WebSocketRoute
@@ -21,7 +21,7 @@ class Document(BaseModel):
 def page(user):
     return element(
         "main",
-        element("h1", "Shared pointers"),
+        element("h1", "Shared pointers and focus"),
         element("nav", element("a", "Alice", href="/"), element("a", "Bob", href="/bob")),
         element("p", f"Signed in as {user}. Open the other link in another browser to see their pointer."),
         element("p", "Names and colors are example settings. Both users can edit; URL names are not authentication."),
@@ -39,25 +39,20 @@ def page(user):
         element(
             "label",
             "Shared note",
+            element("span", id="note-focus", class_="focus-status", role="status").bind("textContent", "focus_note"),
             element("textarea", **{"data-collab-target": "note", "aria-label": "Shared note"}).bind("value", "document.note", mode="two-way"),
         ),
-        element("section", element("h2", "Review"), element("p", "Hover here to point out this section."), **{"data-collab-target": "review"}),
-        element("p", "Connected: ", element("output").bind("textContent", "document.connected")),
-        Pointers()
-        .bind("peers", "pointers")
-        .on(
-            "pointer-change",
-            SetField(
-                "activity",
-                obj(
-                    {
-                        "pointer": event_value("pointer"),
-                        "label": field("name"),
-                        "color": field("color"),
-                    }
-                ),
-            ),
+        element(
+            "section",
+            element("h2", "Review"),
+            element("span", id="review-focus", class_="focus-status", role="status").bind("textContent", "focus_review"),
+            element("p", "Hover here to point out this section, or focus it with Tab to mark it for review."),
+            tabindex=0,
+            **{"data-collab-target": "review", "aria-label": "Review"},
         ),
+        element("p", "Focus and recent typing appear beside the target. These indicators do not lock fields or grant editing access."),
+        element("p", "Connected: ", element("output").bind("textContent", "document.connected")),
+        Pointers().bind("peers", "pointers").on("pointer-change", SetField("pointer", event_value("pointer"))),
     )
 
 
@@ -81,9 +76,23 @@ def create_app(*, codec="json"):
         path: PageSpec(
             lambda user=user: page(user),
             packages=[package],
-            title="Shared pointers",
-            styles=[STYLE],
-            store={"name": user.title(), "color": color, "pointers": [], "page_pointers": True},
+            title="Shared pointers and focus",
+            styles=[
+                STYLE
+                + """
+.focus-status { display:block; min-height:1.5em; color:#90c2ff; font-size:.875rem; }
+label:has(.focus-status:not(:empty)) textarea, section:has(.focus-status:not(:empty)) { outline:2px solid #90c2ff; outline-offset:3px; }
+"""
+            ],
+            store={
+                "name": user.title(),
+                "color": color,
+                "pointers": [],
+                "page_pointers": True,
+                "pointer": None,
+                "focus_note": "",
+                "focus_review": "",
+            },
             scripts=["/components/collab/cdn/example.js"],
             wire=Wire(
                 f"/ws?user={user}",
