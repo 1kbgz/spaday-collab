@@ -54,8 +54,47 @@ uvicorn.Server(uvicorn.Config(create_app(),log_level="error")).run(sockets=[sock
       pages.push(page);
     }
     const [alice, bob] = pages;
+    await expect(alice.getByRole("checkbox")).toBeChecked();
+    await bob.setViewportSize({ width: 950, height: 850 });
+    await alice.mouse.move(10, 10);
+    await expect(bob.locator("spaday-pointers .label")).toHaveText("Alice");
+    await expect(bob.locator("spaday-pointers .hover")).toHaveCSS(
+      "width",
+      "950px",
+    );
+    const cursor = bob.locator("spaday-pointers .cursor");
+    await expect
+      .poll(async () => (await cursor.boundingBox())?.x)
+      .toBeCloseTo((10 * 950) / alice.viewportSize().width, 1);
+    await bob.getByRole("checkbox").uncheck();
+    await expect(bob.locator("spaday-pointers .label")).toHaveText("Alice");
+    await bob.evaluate(() => {
+      document.body.style.minHeight = "2000px";
+      window.scrollTo(0, 1000);
+    });
+    await expect(bob.locator("spaday-pointers .label")).toHaveText("Alice");
+    await alice.getByRole("textbox").hover();
+    await expect(bob.locator("spaday-pointers .cursor")).toHaveCount(0);
+    await bob.evaluate(() => window.scrollTo(0, 0));
+    await expect(bob.locator("spaday-pointers .label")).toHaveText("Alice");
+    await alice.getByRole("checkbox").uncheck();
+    await alice.mouse.move(10, 10);
+    await expect(bob.locator("spaday-pointers .cursor")).toHaveCount(0);
     await alice.getByRole("textbox").hover();
     await expect(bob.locator("spaday-pointers .label")).toHaveText("Alice");
+    await alice.getByRole("checkbox").check();
+    await alice.mouse.move(10, 10);
+    await expect(bob.locator("spaday-pointers .hover")).toHaveCSS(
+      "width",
+      "950px",
+    );
+    await alice.getByRole("textbox").hover();
+    await expect
+      .poll(
+        async () =>
+          (await bob.locator("spaday-pointers .hover").boundingBox())?.width,
+      )
+      .toBe((await bob.getByRole("textbox").boundingBox()).width);
     await alice.getByRole("textbox").fill("Shared edit");
     await expect(bob.getByRole("textbox")).toHaveValue("Shared edit");
     await alice.locator("section").hover();

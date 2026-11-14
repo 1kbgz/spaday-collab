@@ -1,3 +1,6 @@
+import { domTargets } from "../src/ts/pointers.js";
+import { pageTargets } from "./page-pointers.js";
+
 // Application mapping from scoped awareness to the optional pointer UI.
 document.addEventListener(
   "spaday:wire-client",
@@ -13,10 +16,26 @@ document.addEventListener(
           color: state?.color,
         })),
       );
-    const stop = store.subscribe("remote_activity", render);
+    let active = true;
+    const configure = () =>
+      queueMicrotask(() => {
+        if (!active) return;
+        document.querySelector("spaday-pointers").adapter = pageTargets(
+          domTargets(),
+          Boolean(store.get("page_pointers")),
+        );
+      });
+    const stops = [
+      store.subscribe("remote_activity", render),
+      store.subscribe("page_pointers", configure),
+    ];
+    configure();
     render();
     window.addEventListener("pagehide", (event) => {
-      if (!event.persisted) stop();
+      if (!event.persisted) {
+        active = false;
+        stops.forEach((stop) => stop());
+      }
     });
   },
 );
