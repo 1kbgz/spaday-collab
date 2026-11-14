@@ -13,6 +13,13 @@ export function connectClicks(adapter, changed) {
   };
   const click = (event) => {
     if (!enabled || document.hidden) return;
+    const element = event.target instanceof Element ? event.target : null;
+    // Labels forward activation to their control; publish that click only.
+    if (
+      element?.closest("label")?.control &&
+      !element.closest("a[href],button,input,select,textarea")
+    )
+      return;
     let x = event.clientX,
       y = event.clientY;
     if (event.detail === 0 && event.target instanceof Element) {
