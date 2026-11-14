@@ -18,6 +18,15 @@ export function connectFocus(changed) {
       clearTimeout(timer);
     }
     const value = id ? { target: id, editing: editing === id } : null;
+    const element = document.activeElement;
+    if (value && element instanceof HTMLTextAreaElement) {
+      const backward = element.selectionDirection === "backward";
+      value.selection = {
+        text: element.value,
+        anchor: backward ? element.selectionEnd : element.selectionStart,
+        head: backward ? element.selectionStart : element.selectionEnd,
+      };
+    }
     const encoded = JSON.stringify(value);
     if (encoded !== last) {
       last = encoded;
@@ -46,6 +55,8 @@ export function connectFocus(changed) {
   const events = [
     [document, "focusin", focus],
     [document, "focusout", focus],
+    [document, "selectionchange", focus],
+    [document, "select", focus],
     [document, "input", input],
     [document, "visibilitychange", publish],
     [window, "blur", hide],

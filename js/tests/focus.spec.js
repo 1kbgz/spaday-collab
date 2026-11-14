@@ -17,11 +17,11 @@ test("example focus withdraws on blur and disposes pending typing updates", asyn
   await input.focus();
   await expect
     .poll(() => page.evaluate(() => window.changes.at(-1)))
-    .toEqual({ target: "note", editing: false });
-  await input.fill("Local text is not included in focus state");
+    .toMatchObject({ target: "note", editing: false });
+  await input.fill("Selection offsets are scoped to this text");
   await expect
     .poll(() => page.evaluate(() => window.changes.at(-1)))
-    .toEqual({ target: "note", editing: true });
+    .toMatchObject({ target: "note", editing: true });
   await page.evaluate(() => window.dispatchEvent(new Event("blur")));
   await expect
     .poll(() => page.evaluate(() => window.changes.at(-1)))
@@ -29,7 +29,7 @@ test("example focus withdraws on blur and disposes pending typing updates", asyn
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
   await expect
     .poll(() => page.evaluate(() => window.changes.at(-1)))
-    .toEqual({ target: "note", editing: false });
+    .toMatchObject({ target: "note", editing: false });
   await input.fill("Another edit");
   await page.evaluate(() => {
     window.stopFocus();
