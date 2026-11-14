@@ -1,4 +1,5 @@
 import { domTargets } from "../src/ts/pointers.js";
+import { connectTextSelection } from "./text-selection.js";
 import { connectFocus } from "./focus.js";
 import { pageTargets } from "./page-pointers.js";
 
@@ -7,8 +8,10 @@ document.addEventListener(
   "spaday:wire-client",
   ({ detail: { namespace, store } }) => {
     if (namespace !== "document") return;
+    let selections;
     const render = () => {
       const peers = store.get("remote_activity") ?? [];
+      selections?.render(peers);
       store.set(
         "pointers",
         peers.map(({ peer, state }) => ({
@@ -52,20 +55,24 @@ document.addEventListener(
     const stops = [
       store.subscribe("remote_activity", render),
       store.subscribe("pointer", publish),
+      store.subscribe("document.note", () => selections?.refresh()),
       store.subscribe("page_pointers", configure),
     ];
     configure();
     render();
     queueMicrotask(() => {
-      if (active)
-        stopFocus = connectFocus((value) => {
-          focus = value;
-          publish();
-        });
+      if (!active) return;
+      selections = connectTextSelection(document.querySelector("textarea"));
+      render();
+      stopFocus = connectFocus((value) => {
+        focus = value;
+        publish();
+      });
     });
     window.addEventListener("pagehide", (event) => {
       if (!event.persisted) {
         stopFocus();
+        selections?.disconnect();
         active = false;
         stops.forEach((stop) => stop());
       }

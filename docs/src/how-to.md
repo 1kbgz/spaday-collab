@@ -48,7 +48,7 @@ beside it. Type to show “Alice: Editing”; after 1.5 seconds without input, t
 not change keyboard focus.
 
 To adapt this behavior, copy `js/examples/focus.js` and the awareness mapping in
-`js/examples/example.js`. The helper reports `{target, editing}` or `null`, using the focused
+`js/examples/example.js`. The helper reports `{target, editing, selection?}` or `null`, using the focused
 HTML element's nearest `data-collab-target`. Keep this state alongside the pointer in one awareness
 value so updating either field preserves the other. Use `SetField("pointer", event_value("pointer"))`
 for pointer events, then compose the awareness value in the store subscription as the example does.
@@ -62,6 +62,23 @@ The helper and its timeout are example policy, not package exports. For virtuali
 components, map the component's focus/selection events to stable record or field IDs in your adapter;
 do not use DOM row indices as shared identities. Keep editor text anchors in the editor's existing
 collaboration API. Focus labels communicate activity and do not lock fields or grant permission.
+
+## Show a textarea selection
+
+Select text in Alice's shared note to show a colored highlight in Bob's textarea. Collapse the
+selection to show a caret; a backward selection places that caret at its active end. Each browser
+uses its own wrapping, textarea size, and scroll position. The overlay ignores pointer input.
+
+The example helper `js/examples/text-selection.js` measures text in a hidden mirror of the textarea
+and draws the remote ranges above it. Focus changes publish the textarea's UTF-16 `anchor` and
+`head` offsets along with the exact `text` snapshot. Only matching snapshots render, so a model
+update arriving before its awareness update hides stale marks. Empty text and trailing newlines
+still have caret positions. Blur, target changes, and disconnected peers remove the marks.
+
+This small-note example includes the note text in awareness to validate offsets. It does not
+transform selections through concurrent edits or turn the textarea into a text CRDT. Use
+spaday-codemirror's anchored selections for collaborative code editing; keep this mirror and
+snapshot policy in example code.
 
 ## Replace the renderer
 

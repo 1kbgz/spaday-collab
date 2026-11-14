@@ -111,11 +111,33 @@ uvicorn.Server(uvicorn.Config(create_app(),log_level="error")).run(sockets=[sock
     await alice.getByRole("textbox").fill("Shared edit");
     await expect(bob.locator("#note-focus")).toHaveText("Alice: Editing");
     await expect(bob.getByRole("textbox")).toHaveValue("Shared edit");
+    await alice
+      .getByRole("textbox")
+      .evaluate((el) => el.setSelectionRange(0, 6));
+    await expect(bob.locator(".text-selection")).toHaveCount(1);
+    await expect(bob.locator(".text-caret")).toHaveCount(1);
+    const selected = await bob.locator(".text-selection").boundingBox();
+    await expect
+      .poll(async () => (await bob.locator(".text-caret").boundingBox()).x)
+      .toBeCloseTo(selected.x + selected.width, 0);
+    await alice
+      .getByRole("textbox")
+      .evaluate((el) => el.setSelectionRange(0, 6, "backward"));
+    await expect
+      .poll(async () => (await bob.locator(".text-caret").boundingBox()).x)
+      .toBeCloseTo(selected.x, 0);
+    await alice
+      .getByRole("textbox")
+      .evaluate((el) => el.setSelectionRange(3, 3));
+    await expect(bob.locator(".text-selection")).toHaveCount(0);
+    await expect(bob.locator(".text-caret")).toHaveCount(1);
+
     await alice.locator("section").hover();
     await expect(bob.locator("#note-focus")).toHaveText("Alice: Focused");
     await expect(bob.locator("#review-focus")).toBeEmpty();
     await alice.getByRole("textbox").press("Tab");
     await expect(bob.locator("#note-focus")).toBeEmpty();
+    await expect(bob.locator(".text-caret")).toHaveCount(0);
     await expect(bob.locator("#review-focus")).toHaveText("Alice: Focused");
     // Mouse movement and keyboard focus are independent awareness fields.
     await alice.getByRole("textbox").hover();
